@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = "https://ylgnftspegpfcuuwifia.supabase.co";
@@ -37,11 +37,13 @@ export default function App() {
 
   const saveInvite = async () => {
     if (!name || !area) return;
+
     if (editingId) {
       await supabase.from("invites").update({ name, area }).eq("id", editingId);
     } else {
       await supabase.from("invites").insert([{ name, area, category: tab }]);
     }
+
     setName("");
     setArea("");
     setEditingId(null);
@@ -149,7 +151,7 @@ export default function App() {
             {groupByArea && <h4 style={areaTitle}>{area}</h4>}
 
             {grouped[area].map((inv) => (
-              <SwipeCard
+              <InviteCard
                 key={inv.id}
                 inv={inv}
                 onToggle={toggleInvited}
@@ -188,6 +190,7 @@ export default function App() {
         <div style={overlay} onClick={() => setShowModal(false)}>
           <div style={modal} onClick={(e) => e.stopPropagation()}>
             <h3>{editingId ? "Edit" : "Add"}</h3>
+
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -216,37 +219,12 @@ export default function App() {
   );
 }
 
-// 🔥 SWIPE CARD
-function SwipeCard({ inv, onToggle, onDelete, onEdit }) {
-  const [dx, setDx] = useState(0);
-  const startX = useRef(null);
-
-  const start = (e) => {
-    startX.current = e.touches ? e.touches[0].clientX : e.clientX;
-  };
-  const move = (e) => {
-    if (startX.current === null) return;
-    const x = e.touches ? e.touches[0].clientX : e.clientX;
-    setDx(x - startX.current);
-  };
-  const end = () => {
-    if (dx > 80) onToggle(inv.id, inv.invited); // 👉 right swipe = complete
-    if (dx < -80) onDelete(inv.id); // 👉 left swipe = delete
-    setDx(0);
-    startX.current = null;
-  };
-
+// ✅ CLEAN CARD (NO SWIPE)
+function InviteCard({ inv, onToggle, onDelete, onEdit }) {
   return (
     <div
-      onMouseDown={start}
-      onMouseMove={move}
-      onMouseUp={end}
-      onTouchStart={start}
-      onTouchMove={move}
-      onTouchEnd={end}
       style={{
         ...card,
-        transform: `translateX(${Math.max(Math.min(dx, 80), -80)}px)`,
         background: inv.invited
           ? "linear-gradient(135deg,#00c853,#2e7d32)"
           : "#1c1c2e",
@@ -269,7 +247,7 @@ function SwipeCard({ inv, onToggle, onDelete, onEdit }) {
   );
 }
 
-// 🎨 STYLES
+// 🎨 STYLES (same as before)
 const container = {
   minHeight: "100vh",
   background: "#0f0c29",
@@ -308,9 +286,8 @@ const card = {
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
-  overflow: "hidden",
 };
-const actionGroup = { display: "flex", gap: 8, flexShrink: 0 };
+const actionGroup = { display: "flex", gap: 8 };
 const iconBtn = {
   padding: "6px 8px",
   borderRadius: 8,
